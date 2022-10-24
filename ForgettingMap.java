@@ -1,15 +1,19 @@
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 class ForgettingMap {
 
   int maxSize;
   int currentSize;
   ConcurrentHashMap<Integer,Content> forgettingMap;
 
+  long reads = 0;
+  long writes = 0;
+
   ForgettingMap( int x ){
 
-    if (x<1 || x>500) throw new IllegalArgumentException("The max value must be in range (1 - 500");
+    if ( x < 1  ||  x > 500 ) throw new IllegalArgumentException("The max value must be in range (1 - 500");
 
     this.maxSize = x;
     this.currentSize = 0;
@@ -19,7 +23,9 @@ class ForgettingMap {
   }
 
 
-  synchronized void add(int key, Content value) {
+  synchronized void add( int key, Content value ) {
+
+    this.writes ++;
 
     if (forgettingMap.containsKey(key)) {
       forgettingMap.put(key,value);
@@ -36,34 +42,44 @@ class ForgettingMap {
     deleteLeastAccessed();
     forgettingMap.put(key,value);
 
-  //  if (forgettingMap.mappingCount() > maxSize) throw new IllegalStateException("max size > " + maxSize + " is: " + forgettingMap.mappingCount());
-
   }
+
 
   private void deleteLeastAccessed() {
 
     // an overflowing accessCount will become the lowest.
     int lowestAccessCount = 0;
-    // in case of a tie-breaker the last found is deleted to keep the time O(n).
+    boolean initialised = false;
     int leastAccessedKey = 0;
 
     for (Map.Entry<Integer,Content> entry: forgettingMap.entrySet()) {
-      if (entry.getValue().getAccessTotal() <= lowestAccessCount) {
+
+      if (!initialised) {   // initializes with the first retrieved values
+        lowestAccessCount = entry.getValue().getAccessTotal();
+        leastAccessedKey = entry.getKey();
+        initialised = true;
+        continue;
+      }
+
+      // in case of a tie-breaker the first found is deleted to keep the time O(n).
+      if (entry.getValue().getAccessTotal() < lowestAccessCount) {
         lowestAccessCount = entry.getValue().getAccessTotal();
         leastAccessedKey = entry.getKey();
       }
+
     }
 
     forgettingMap.remove(leastAccessedKey);
+
   }
 
 
-  Content find(int key) {
+  Content find( int key ) {
+    this.reads ++;
     Content content = forgettingMap.get(key);
     if (content != null) content.incrementAccessTotal();
     return content;
   }
-
 
 
 }

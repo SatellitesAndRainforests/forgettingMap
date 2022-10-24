@@ -67,10 +67,32 @@ removeLeastAccessed() {
 
 Content find(key) { }
 
++ The concurrnetHashMap was used at it was considered to be highly scalable suitable for use in the Oragami project. 
+
++ bottle-neck is the syncronised add. synchronisation can be defined internally in the method to allow for concurrent adds - but with added complexity - the concurrent nature of the forgetting map means operating on transient data that retrieving the size(), or 'least used' association is ever updating/changing. there is a 'happens before' relationship within the concurrentHashMap but there is a possibility finding and deleting the least accessed, and, ensuring concurrnet threads dont increase the map beyond the x maxSize param when not synchronised may occur.  
+
++ I think there is an O(log(n)) optimised ForgettingMap using a <accessCount, Key> Map that can store duplicate keys with a comparator to keep orded by accessCount. The first key can be used to retrieve the key for a seconf Map storing <Key, Value> assoications.
+
++ Does not use unique keys. Unique keys increases the compleixty of testing where 
 
 -- Testing --------------------------------------
 
 + Many threads
 + important aspects.
+
++ Tests:
+++ Thread-safety
+++ The map holds the associations between 'key' and 'content'.
+++ add() add's an association.
+++ find() retrieves the same assoication - and increments the assoication's 'retreved count'.
+++ Hold's as many as the maxSize, but no more.
+++ test the x size parameter.
+++ test the least used association is removed - when at capacity.
+++ test the tiebreaker ...
+++ test differnt inputs (-, int overflow, ...);
+
+
++ Many Threads Tests:
+++ How many adds() and reads() per hour with x threads with my:    2 cores, 4 threads, 2012 'Intel i7-3520M (2.90 GHz, 4MB L3, 1600MHz FSB'
 
 

@@ -1,14 +1,18 @@
+import java.util.Date;
+
 class Content {
 
-  int accessTotal;
-  Object content;
+  private int accessTotal;
+  private Object contents;
+  private long created;
 
-  Content( Object content ) {
+  Content( Object contents ) {
     this.accessTotal = 0;
-    this.content = content;
+    this.contents = contents;
+    this.created = System.currentTimeMillis();
   }
 
-  void incrementAccessTotal() {
+  synchronized void incrementAccessTotal() {
     // overFlow logic ...
     accessTotal ++;
   }
@@ -17,5 +21,12 @@ class Content {
     return accessTotal;
   }
 
+  Object getContents(){
+    return contents;
+  }
+
+  long getCreated(){
+    return created;
+  }
 
 }
