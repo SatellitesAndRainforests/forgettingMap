@@ -8,29 +8,46 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Mark Start
  * @Date 24/10/2022
  */
+
 public class SingleAndMultiThreadTests {
 
-    int forgettingMapMaxSize = 10;
-    int associationsToTest = forgettingMapMaxSize * 10;
-    int speedTestDuration = 2000;  // 2 second in ms.
-    int threadCycles = 3;
+    int forgettingMapMaxSize;   // 10
+    int speedTestDuration;      // 2000, 2 second in ms.
+    int threadCycles;           // 3
+    int associationsToTest;     // maxSize * 10
+
+    long speedTestReads = 0;
+    long speedTestWrites = 0;
+
+    String ANSI_RED = "\u001B[31m";         // colours won't show in windows os?
+    String ANSI_GREEN = "\u001B[32m";
+    String ANSI_RESET = "\u001B[0m";
+
     ForgettingMap forgettingMap;
 
-    SingleAndMultiThreadTests() {
+
+    SingleAndMultiThreadTests( int forgettingMapMaxSize, int speedTestDuration, int threadCycles ) {
+
+        this.forgettingMapMaxSize = forgettingMapMaxSize;
+        this.speedTestDuration = speedTestDuration;
+        this.threadCycles = threadCycles;
+        this.associationsToTest = forgettingMapMaxSize * 10;
         this.forgettingMap = new ForgettingMap( forgettingMapMaxSize );
         runTests();
+
     }
 
-    private void runTests() {
+
+    void runTests() {
 
         printIntro();
         long startTime = System.nanoTime();
 
         // Single Thread Tests ---
 
-        printTest( addAndFindMethodsMaintainAssociations(), "add() and find() Maintain Associations. Total Associations Tested:\t\t\t" + associationsToTest);
+        printTest( addAndFindMethodsMaintainAssociations(), "add() and find() Maintain Associations. Total Associations Tested:\t" + associationsToTest);
         printTest( contentAccessCountIncrementsCorrectly(), "Associations Access Count Increments Correctly.");
-        printTest( forgettingMapNeverExceedsMaxSize(), "Forgetting Map Never Exceeds Max Size Argument X, Currently:\t\t\t\t" + forgettingMapMaxSize );
+        printTest( forgettingMapNeverExceedsMaxSize(), "Forgetting Map Never Exceeds Max Size Argument X, Currently:\t\t" + forgettingMapMaxSize );
 //        incomplete:   test( leastAccessedAssociationIsRemoved(), "At Capacity The Least Accessed Association Is Removed");
 //        TODO:   test( inTheEventOfATieTheFirstFoundIsUsed()); // Keeping the O(n).
 //        TODO:   test( differentInputs(), "minus, overFlowingInt, null, ...");
@@ -44,7 +61,7 @@ public class SingleAndMultiThreadTests {
         printTest( concurrentReads(), "Concurrent Reads Have No Lost Updates");
         System.out.println();
 
-        Runnable threadTask = new Task();   // Private Inner Class.
+        Runnable threadTask = new MultiThreadTestTask();   // Private Inner Class.
         Thread a = new Thread(threadTask);
         Thread b = new Thread(threadTask);
         Thread c = new Thread(threadTask);
@@ -66,19 +83,21 @@ public class SingleAndMultiThreadTests {
             }
         }
 
-
         printMultiTestSummary(startTime);
 
-        speedTest( false );
-        forgettingMapMaxSize = 500;
-        System.out.println("----------------------------------------------");
-        speedTest( true );
-        System.out.println("----------------------------------------------");
+        // I rushed this ending a bit.
+
+        speedTest( false );     // inital size
+        speedTest( true );      // max size 500
     }
 
     void speedTest( boolean lastTest ) {
 
         long startTime = System.nanoTime();
+        if (lastTest) forgettingMapMaxSize = 500;
+
+        speedTestReads = 0;
+        speedTestWrites = 0;
 
         forgettingMap = new ForgettingMap(forgettingMapMaxSize);
 
@@ -92,14 +111,15 @@ public class SingleAndMultiThreadTests {
         speed3.start();
         speed4.start();
 
-
         try {
+
             Thread.sleep(speedTestDuration);
-            printSummary(startTime);
+            printSpeedTestSummary(startTime);
             if (!lastTest) return;
-            System.out.println("----------------------------------------------");
-            System.exit(0);
+            else System.exit(0);
+
         } catch (InterruptedException e) {
+            System.exit(1);
             throw new RuntimeException(e);
         }
 
@@ -114,19 +134,15 @@ public class SingleAndMultiThreadTests {
         }
     }
 
-
-    class Task implements Runnable {
-
+    class MultiThreadTestTask implements Runnable {
         @Override
         public void run() {
-//            System.out.println("Starting Thread: " + Thread.currentThread().getName());
             for (int i=0;i<threadCycles;i++) {
 
-                printTest( threadAddAndFindMethodsMaintainAssociations(), "add() and find() Maintain Associations.\t\t\t\t\t\t\t\tThread Cycle:\t" + i);
-//              Transient Data prevents testing:      printTest( threadContentAccessCountIncrementsCorrectly(), "Associations Access Count Increments Correctly - Threads");
-                printTest( threadForgettingMapNeverExceedsMaxSize(), "Forgetting Map Never Exceeds Max Size Argument X, Currently: " + forgettingMapMaxSize + "\t\tThread Cycle:\t" + i);
+                printTest( threadAddAndFindMethodsMaintainAssociations(), "add() and find() Maintain Associations.\t\tThread Cycle:\t" + i);
+                printTest( threadForgettingMapNeverExceedsMaxSize(), "Forgetting Map Never Exceeds Max Size.\t\tThread Cycle:\t" + i);
 
-                try {   // Help to share processor time.
+                try {   // Helps to share processor time.
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -138,16 +154,18 @@ public class SingleAndMultiThreadTests {
 //    Print -------------------------------------------------------------------------------------------------------------
 
     void printIntro(){
+
+        System.out.println();
+        System.out.println("  Key: ");
+        System.out.println(ANSI_GREEN + "[ Passed ]\t\t" + ANSI_RESET);
+        System.out.println(ANSI_RED + "[ Failed ]\t\t" + ANSI_RESET);
         System.out.println();
         System.out.println("Single Thread Tests:");
         System.out.println("  Status \t\t\t Description");
+
     }
 
     void printTest(boolean testPassed, String description){
-
-        String ANSI_RED = "\u001B[31m";
-        String ANSI_GREEN = "\u001B[32m";
-        String ANSI_RESET = "\u001B[0m";
 
         if (testPassed) {
             System.out.println(ANSI_GREEN + "[ Passed ]\t\t" + description + ANSI_RESET);
@@ -160,10 +178,10 @@ public class SingleAndMultiThreadTests {
 
     void printSingleTestSummary(long startTime) {
 
-        long totalTimeInSeconds = ((System.nanoTime() - startTime)/1000000);
+        long totalTimeInMS = ((System.nanoTime() - startTime)/1000000);
 
         System.out.println();
-        System.out.println( "Total Execution Time: "+ totalTimeInSeconds + " Milliseconds.");
+        System.out.println( "Total Execution Time: "+ totalTimeInMS + " Milliseconds.");
         System.out.println();
         System.out.println("Multi Thread Tests: ");
         System.out.println("  Status \t\t\t Description");
@@ -172,22 +190,20 @@ public class SingleAndMultiThreadTests {
 
     private void printMultiTestSummary(long startTime) {
 
-        long totalTimeInSeconds = ((System.nanoTime() - startTime)/1000000);
+        long totalTimeInMS = ((System.nanoTime() - startTime)/1000000);
 
         System.out.println();
-        System.out.println( "Total Execution Time: "+ totalTimeInSeconds + " Milliseconds.");
+        System.out.println( "Total Execution Time: "+ totalTimeInMS + " Milliseconds.");
         System.out.println();
         System.out.println("Speed Test: ");
-        System.out.println("----------------------------------------------");
+        System.out.println("----------------------------------------------------------");
     }
 
-
-
-    void printSummary(long startTime){
+    void printSpeedTestSummary(long startTime){
 
         long totalTimeInSeconds = ((System.nanoTime() - startTime)/1000000000);
-        long totalReadOperations = forgettingMap.reads;
-        long totalWriteOperations = forgettingMap.writes;
+        long totalReadOperations = speedTestReads;
+        long totalWriteOperations = speedTestWrites;
         long readsPerSecond = totalReadOperations / totalTimeInSeconds;
         long writesPerSecond = totalWriteOperations / totalTimeInSeconds;
 
@@ -196,11 +212,10 @@ public class SingleAndMultiThreadTests {
         System.out.print("Writes Per Second (Approx):\t\t\t");
         System.out.format("%,8d%n", writesPerSecond);
         System.out.println();
-        System.out.println( "Total Execution Time:\t\t\t\t"+ totalTimeInSeconds + " seconds");
         System.out.println("Forgetting Map Size:\t\t\t\t" + forgettingMapMaxSize);
+        System.out.println( "Total Execution Time:\t\t\t\t"+ totalTimeInSeconds + " seconds");
+        System.out.println("----------------------------------------------------------");
     }
-
-
 
 
 //    Single Thread Tests ----------------------------------------------------------------------------------------------
@@ -213,8 +228,8 @@ public class SingleAndMultiThreadTests {
             String contents = randomStringOfLength(randomIntBetween(0, 7));    // smaller contents is easier to view when debugging.
             Content content = new Content(contents);
 
-            forgettingMap.add(key, content);
-            Content retrieved = forgettingMap.find(key);
+            forgettingMap.add(key, content);    // updates, creates, or deletes least and creates.
+            Content retrieved = forgettingMap.find(key);    // simple read.
 
             if (!retrieved.getContents().equals(contents)) {
                 return false;
@@ -227,7 +242,7 @@ public class SingleAndMultiThreadTests {
 
     boolean contentAccessCountIncrementsCorrectly() {
 
-        // Given
+        // Given - current associations in the forgettingMap and their accessCounts.
 
         Map<Integer,Integer> keyAccessCountMap = new HashMap<Integer,Integer>();
 
@@ -238,7 +253,7 @@ public class SingleAndMultiThreadTests {
 
         // When
 
-        // access each key in forgettingMap and testMap 3 times;
+        // each key in forgettingMap and testMap is accessed 3 times;
         for (int i=0;i<3;i++) {
             for (Map.Entry<Integer,Integer> entry: keyAccessCountMap.entrySet()) {
                 forgettingMap.find(entry.getKey());
@@ -250,8 +265,7 @@ public class SingleAndMultiThreadTests {
 
         // counts are consistent.
         for (Map.Entry<Integer,Integer> entry: keyAccessCountMap.entrySet()) {
-            if (forgettingMap.find(entry.getKey()).getAccessTotal() == keyAccessCountMap.get(entry.getKey())) return false;
-
+            if (forgettingMap.forgettingMap.get(entry.getKey()).getAccessTotal() != entry.getValue() ) return false;
         }
 
         return true;
@@ -263,7 +277,7 @@ public class SingleAndMultiThreadTests {
         // Given - an empty forgettingMap
         forgettingMap = new ForgettingMap(forgettingMapMaxSize);
 
-        // When - random operations (5 times size)
+        // When - 20 * size random operations.
         for (int i=0;i<this.associationsToTest;i++) {
             int key = randomIntBetween(0, forgettingMapMaxSize * 2 );
             forgettingMap.add(key, new Content(null));
@@ -310,7 +324,7 @@ public class SingleAndMultiThreadTests {
 
     boolean concurrentReads(){
 
-        // Given - A starting access total - 0 or existing.
+        // Given - A key given to two threads with a starting accessCount - either 0 or existing.
 
         int keyIdToTest = 1;
         int startingAccessTotal = 0;
@@ -339,7 +353,7 @@ public class SingleAndMultiThreadTests {
             }
         }
 
-        // Then - The access count = the starting value + 200.
+        // Then - The access count = the starting value + 200 with no lost updates.
 
         return forgettingMap.forgettingMap.get(keyIdToTest).getAccessTotal() == startingAccessTotal + 200;
 
@@ -357,21 +371,15 @@ public class SingleAndMultiThreadTests {
         public void run() {
 
             for (int i=0;i<100;i++) {
-
                 forgettingMap.find(keyId);
-
-                try {   // Help to share processor time.
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
             }
+
         }
     }
 
     boolean threadAddAndFindMethodsMaintainAssociations(){
 
-        // Given - associations the thread has added.
+        // Given - associations a thread has added.
 
         Map<Integer,Content> testMap = new HashMap<Integer,Content>();
 
@@ -386,8 +394,10 @@ public class SingleAndMultiThreadTests {
             if (!testMap.containsKey(key)) testMap.put(key,content);    // only add to testMap don't update. Total Associations = forgettingMapMaxSize *2.
 
             forgettingMap.add(key,content);     // can update, or, delete/'forget' and create.
+            speedTestWrites ++;
 
             Content retrieved = forgettingMap.find(key);
+            speedTestReads ++;
 
             // Then - if, the association is still in the forgettingMap - check the contents have been maintained.
 
@@ -405,7 +415,9 @@ public class SingleAndMultiThreadTests {
 
     boolean threadForgettingMapNeverExceedsMaxSize() {
 
-        if ( forgettingMap.forgettingMap.size() > forgettingMapMaxSize ) return false;
+        for (int i=0;i<10;i++) {
+            if (forgettingMap.forgettingMap.size() > forgettingMapMaxSize) return false;
+        }
 
         return true;
 
@@ -437,7 +449,7 @@ public class SingleAndMultiThreadTests {
     }
 
     public static void main (String[] args) {
-        SingleAndMultiThreadTests test = new SingleAndMultiThreadTests();
+        SingleAndMultiThreadTests test = new SingleAndMultiThreadTests(10, 2000, 3);
     }
 
 }

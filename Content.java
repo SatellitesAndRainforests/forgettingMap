@@ -1,4 +1,4 @@
-import java.util.Date;
+
 
 class Content {
 
@@ -25,8 +25,11 @@ class Content {
     return contents;
   }
 
+  // not used
   long getCreated(){
     return created;
   }
 
 }
+
+
