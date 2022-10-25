@@ -20,7 +20,7 @@ In case of many associations being the least accessed the first that was found i
 A Content objects creationDate would also be possible to use but with added overhead.
 If the integer access count overflows it becomes the least accessed and is deleted. 
 
-The ConcurrentHashMap structure has it's own thread-safety with a 'happens-before' guarentee that is expected to affect the read/write operation's speed. This is unexpected as the forgettingMap's find() method is not Synchronised. It was selected for it's thread-safety and it's high scaleability and relevent to the Oragarmi organisation.
+The ConcurrentHashMap structure has it's own thread-safety with a 'happens-before' guarentee that is expected to affect the read/write operation's speed. This is unexpected as the forgettingMap's find() method is not Synchronised. It was selected for it's thread-safety and it's high scaleability and relevance to the Oragarmi organisation.
 
 Testing addresses both single and multi-threaded tests. Several of the tests revealed bugs that were then resolved. The testing coverage is not complete and a few further TODO: tests are outlined. Testing transient data increases the complexity of testing, but the testing is considered an appropriate start.
 
@@ -66,35 +66,35 @@ Design, Implement, Test a thread-safe 'forgetting map'.
 
 Rough Outline:
 
-class Content {
-  int timesAccessed = 0;
-  Object contents = null;
+class Content { <br>
+&nbsp;  int timesAccessed = 0;<br>
+&nbsp;  Object contents = null;<br>
+<br>
+ &nbsp; Content(Object contents) {<br>
+  &nbsp;&nbsp;  this.contents = contents;<br>
+&nbsp;  }<br>
+}<br>
+<br>
+ForgettingMap {<br>
+&nbsp;  int maxSize = ?;<br>
+&nbsp;  ForgettingMap( int size ) {<br>
+&nbsp;&nbsp;    if ( size < 1 || size > maxSize ) throw error.<br>
+&nbsp;  }<br>
+<br>
+  // sncyronised //<br>
+&nbsp;  boolean add(key, Content) { <br>
+&nbsp;&nbsp;  if (Content == null) return false<br>
+&nbsp;&nbsp;  if (forgettingMapIsAtCapacity()) removeLeastAccessed()<br>
+&nbsp;&nbsp;  put();<br>
+}<br>
+<br>
+&nbsp;  removeLeastAccessed() {<br>
+ &nbsp;&nbsp;   Collection leastAccessed = getLeastAccessed()<br>
+  &nbsp;&nbsp;  remove oldest.   <br>
+}<br>
 
-  Content(Object contents) {
-    this.contents = contents;
-  }
-}
-
-ForgettingMap {
-  int maxSize = ?;
-  ForgettingMap( int size ) {
-    if ( size < 1 || size > maxSize ) throw error.
-  }
-
-  // sncyronised //
-  boolean add(key, Content) { 
-  if (Content == null) return false
-  if (forgettingMapIsAtCapacity()) removeLeastAccessed()
-  put();
-}
-
-  removeLeastAccessed() {
-    Collection leastAccessed = getLeastAccessed()
-    remove oldest.   
-}
-
-Content find(key) { }
-
+Content find(key) { }<br>
+<br>
 
 + The concurrent nature of the forgetting map means operating on transient data, that retrieving the size(), or 'least used' association is ever updating/changing. 
 + Ensuring concurrnet threads dont increase the map beyond the x maxSize param when not synchronised may occur.
@@ -103,21 +103,21 @@ Content find(key) { }
 
 -- Testing notes --------------------------------------
 
-+ Many threads
++ Many threads 
 + important aspects.
 
-+ Tests:
-++ Thread-safety
-++ lost updates.
-++ The map holds the associations between 'key' and 'content'.
-++ find() retrieves the same assoication - and increments the assoication's 'retreved count'.
-++ Hold's as many as the maxSize, but no more.
-++ test the x size parameter.
-++ test the least used association is removed - when at capacity.
-++ test the tiebreaker ...
-++ test differnt inputs (-, int overflow, ...);
++ Tests:<br>
+++ Thread-safety<br>
+++ lost updates.<br>
+++ The map holds the associations between 'key' and 'content'.<br>
+++ find() retrieves the same assoication - and increments the assoication's 'retreved count'.<br>
+++ Hold's as many as the maxSize, but no more.<br>
+++ test the x size parameter.<br>
+++ test the least used association is removed - when at capacity.<br>
+++ test the tiebreaker ...<br>
+++ test differnt inputs (-, int overflow, ...);<br>
 
-+ Many Threads speed Tests:
-++ How many adds() and reads() per hour with x threads with my:    2 cores, 4 threads, 2012 'Intel i7-3520M (2.90 GHz, 4MB L3, 1600MHz FSB'
++ Many Threads speed Tests:<br>
+++ How many adds() and reads() per hour with x threads with my:    2 cores, 4 threads, 2012 'Intel i7-3520M (2.90 GHz, 4MB L3, 1600MHz FSB'<br>
 
 
