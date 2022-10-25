@@ -1,28 +1,30 @@
-# forgettingMap
-A thread-safe 'forgetting map' holds 'key' and 'content' associations with add(key,content) and find(key) --> content, methods.
+# Forgetting Map
+*A thread-safe 'forgetting map' holds 'key' and 'content' associations with add(key, content) and find(key) --> content, methods.*
 
-Written in Java 1.8. Simply compile, and run in a commandline terminal:
-javac *.java
-java SingleAndMultiThreadTests
+Written in Java 1.8. Simply compile, and run in the commandline: <br> `javac *.java` <br>`java SingleAndMultiThreadTests`
 
-About   2,000,000   read/write operations per second for a ForgettingMap of size 10.
-About   200,000     for a Forgettingmap of size 500. 
+About &nbsp; 2,000,000 &nbsp; read/write operations per second for a ForgettingMap of size 10.<br>
+About &nbsp; 200,000 &nbsp;&nbsp;&nbsp;&nbsp; read/write operations per second for a Forgettingmap of size 500. <br>
 
-With slightly more writes than reads.
-Tested on 2 cores, 4 threads, 2012 Intel i7, 2.90 Ghz.
+With slightly more writes than reads.<br>
+Tested on 2 cores, 4 threads, 2012 Intel i7, 2.90 Ghz.<br>
+
+
+![forgettingMapScreen](https://user-images.githubusercontent.com/45234288/197765626-868a86ce-24ea-436d-a836-c8a4f9320bf5.png)
+
 
 The forgettingMap is built around the ConcurrentHashMap structure with <Integer, Content> key, value associations.
-Synchronized add()'s and the Content Class's incrementAccessTotal() methods prevent lost updates, prevent the size increasing beyond the max size defined byt the argument 'x' and order multiple Threads to find and delete the least accessed association before it is found or deleted by another.
+Synchronized add()'s and the Content Class's incrementAccessTotal() methods prevent lost updates, prevent the size increasing beyond the max size defined by the argument 'x' and order multiple Threads to find and delete the least accessed association before it is found or deleted by another.
 
 In case of many associations being the least accessed the first that was found is deleted to achieve a time-complexity of O(n).
-A Content objects creationDate could also be used but with added overhead.
+A Content objects creationDate would also be possible to use but with added overhead.
 If the integer access count overflows it becomes the least accessed and is deleted. 
 
 The ConcurrentHashMap structure has it's own thread-safety with a 'happens-before' guarentee that is expected to affect the read/write operation's speed. This is unexpected as the forgettingMap's find() method is not Synchronised. It was selected for it's thread-safety and it's high scaleability and relevent to the Oragarmi organisation.
 
 Testing addresses both single and multi-threaded tests. Several of the tests revealed bugs that were then resolved. The testing coverage is not complete and a few further TODO: tests are outlined. Testing transient data increases the complexity of testing, but the testing is considered an appropriate start.
 
-The Synchronised add() can be see as a bottleneck with an O(n) time-complexity. An O(log(n)) optimisation was explored where assoications 'access counts' can be sorted in a tree/concurrentSkipListMap with a comparator, although only sortable by keys and not by values. If an 'accessCount' key can reference many 'key' values, the set of least accessed 'keys' could be accessed in O(log(n)) time, significantly faster (even if the whole object were locked) but with added complexity to implement and test. Other considerations include duplicate keys, key,value pairs with many values.
+The Synchronised add() can be see as a bottleneck with an O(n) time-complexity. An O(log(n)) optimisation was explored where assoications 'access counts' can be sorted in a tree/concurrentSkipListMap with a comparator, although only sortable by keys and not by values. If an 'accessCount' key can reference many 'key' values, the set of least accessed 'keys' could possibly be accessed in O(log(n)) time, significantly faster (even if the whole object were locked) but with added complexity to implement and test. Other considerations include duplicate keys, key,value pairs with many values.
 
 I think there may be a trick with a stack aswell ...
 
